@@ -5,6 +5,15 @@
 const express = require('express');
 const logger = require('morgan');
 
+// intersectArrays devuelve un array que contiene todos los elementos que están presentes tanto en arr1 como en arr2
+function intersectArrays(arr1, arr2){
+    return arr1.filter(v => arr2.includes(v))
+}
+
+function getAllWinningNumbers(item){
+    return `${item.winning_numbers} ${item.supplemental_numbers} ${item.super_ball}`
+}
+
 // Es generarme un objeto para gestionar el enrutamiento y otros aspectos de la aplicación
 const app = express();
 
@@ -23,6 +32,7 @@ app.get('/api/check-date', (req, res) => {
 
     // 1. Tenemos que informar al endpoint de tipo GET de una fecha en concreto. usaremos una query string para proveer de esta info
     // ¿Que aspecto va a tener una consulta para el 17 de mayo de 2024?
+
     // /api/check-date?date=2024-05-17
 
     // 2. Capturar/extraer el valor del parámetro 'date' 
@@ -44,7 +54,7 @@ app.get('/api/check-date', (req, res) => {
          */
         res.send({
             message: "Draw found",
-            winningNumbers: `${item.winning_numbers} ${item.supplemental_numbers} ${item.super_ball}`
+            winningNumbers: getAllWinningNumbers(item)
         });
     } else {
         res.status(404).send({
@@ -56,6 +66,48 @@ app.get('/api/check-date', (req, res) => {
 
 
 });
+
+// /api/get-computed-results?date=2024-06-18&playedNumbers=23 20 33 44 50 02 04
+app.get('/api/get-computed-results', (req, res) => {
+
+    // Extraer los valores de date y playNumbers
+    const { date, playedNumbers } = req.query
+
+    // Tengo un string separado por espacios y quiero convertirlo en un array
+    playedNumbers.split(" ")
+
+    // .find() para encontrar el sorteo según la fecha
+    const lottery = require('./data/lottery.json');
+    const item = lottery.find(raffle => raffle.draw_date.includes(date));
+
+    // Condicional para ver si el sorteo existe
+    if(item) {
+        // Obtener todos los números ganadores y también convertirlos en un array
+        const winningNumbers = getAllWinningNumbers(item).split(" ")
+        console.log("🚀 ~ app.get ~ winningNumbers:", winningNumbers)
+
+        // Encontrar cuantas coincidencias hay entre playNumbers y winningNumbers
+        const matchedNumbers = intersectArrays(winningNumbers, playedNumbers)
+        console.log("🚀 ~ app.get ~ matchedNumbers:", matchedNumbers)
+
+        // Calcular premio obtenido según prizes.json
+        const prizes = require('./data/prizes.json')
+        const prize = prizes[matchedNumbers.length].prize
+
+        // Enviar un .send con numeroCoincidencias y dinero ganado
+        res.send({
+            message: "Draw found",
+            matchedNumbers: matchedNumbers.length,
+            prize: prize
+        })
+
+    } else {
+        res.status(404).send({
+            message: `Draw not found for the given date: ${date}` 
+        });
+    }
+   
+})
 
 // Levantar el servidor
 app.listen(3000, () => {
