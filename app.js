@@ -1,6 +1,4 @@
 
-
-
 // Importar el paquete de terceros que acabamos de instalar. Fijaos que como se encuentra en la carpeta node_modules NO hace falta especificar ninguna ruta (al igual que pasa con los built-in modules)
 const express = require('express');
 const logger = require('morgan');
@@ -14,35 +12,36 @@ function getAllWinningNumbers(item){
     return `${item.winning_numbers} ${item.supplemental_numbers} ${item.super_ball}`
 }
 
-// Es generarme un objeto para gestionar el enrutamiento y otros aspectos de la aplicación
+// Objeto para gestionar el enrutamiento y otros aspectos de la aplicación
 const app = express();
 
 // Añadimos el middleware de morgan para loguear todas las peticiones que haga un cliente
 app.use(logger('dev'));
 
-// nos gustaría que también gestionaras los datos de tipo JSON (entre ellos los POST que nos lleguen)
+// Gestionar los datos de tipo JSON (entre ellos los POST que nos lleguen)
 app.use(express.urlencoded({ extended: true }));  // Middleware para parsear datos de formularios
 
+
+// PETICIONES
 
 app.get('/', (req, res) => {
     res.sendFile(__dirname + '/views/index.html');
 })
 
+// COMPROBAR NÚMEROS PREMIADOS A TRAVÉS DE LA FECHA
+
+ // /api/check-date?date=2024-05-17
 app.get('/api/check-date', (req, res) => {
 
-    // 1. Tenemos que informar al endpoint de tipo GET de una fecha en concreto. usaremos una query string para proveer de esta info
-    // ¿Que aspecto va a tener una consulta para el 17 de mayo de 2024?
+    // Tenemos que informar al endpoint de tipo GET de una fecha en concreto. usaremos una query string para proveer de esta info
 
-    // /api/check-date?date=2024-05-17
-
-    // 2. Capturar/extraer el valor del parámetro 'date' 
+    // Obtener la fecha a comprobar de la query string
     const date = req.query.date;
-    console.log(date)
 
-    // 3. Buscar a ver si hay sorteo para la fecha 'date' en el lottery.json (cargar el JSON) require, readFileSync
+    // Cargar los datos del json
     const lottery = require('./data/lottery.json');
 
-    // 4. ¿Qué método de array vaís a usar para la busqueda? .find
+    // Buscar en el array a través de la fecha, el boleto premiado
     const item = lottery.find(raffle => raffle.draw_date.includes(date));
 
     if (item) {
@@ -62,21 +61,21 @@ app.get('/api/check-date', (req, res) => {
         });
     }
 
-    // 5. Suponemos de momento que siempre nos pasan una fecha que existe. 2020-09-25 . Tenemos que devolver un JSON con este formato
-
 
 });
+
+// COMPROBAR SI TUS NÚMEROS SON PREMIADOS, A TRAVÉS DE LA FECHA Y LOS NÚMEROS
 
 // /api/get-computed-results?date=2024-06-18&playedNumbers=23 20 33 44 50 02 04
 app.get('/api/get-computed-results', (req, res) => {
 
-    // Extraer los valores de date y playNumbers
+    // Obtener la fecha y los números jugados desde la query string
     const { date, playedNumbers } = req.query
 
-    // Tengo un string separado por espacios y quiero convertirlo en un array
+    // Como playedNumbers es un string separado por espacios, necesito convertirlo en un array
     playedNumbers.split(" ")
 
-    // .find() para encontrar el sorteo según la fecha
+    // Obtengo los sorteos del json y utilizo .find() para encontrar el sorteo según la fecha
     const lottery = require('./data/lottery.json');
     const item = lottery.find(raffle => raffle.draw_date.includes(date));
 
@@ -90,7 +89,7 @@ app.get('/api/get-computed-results', (req, res) => {
         const matchedNumbers = intersectArrays(winningNumbers, playedNumbers)
         console.log("🚀 ~ app.get ~ matchedNumbers:", matchedNumbers)
 
-        // Calcular premio obtenido según prizes.json
+        // Calcular premio obtenido según la info de prizes.json y las coincidencias
         const prizes = require('./data/prizes.json')
         const prize = prizes[matchedNumbers.length].prize
 

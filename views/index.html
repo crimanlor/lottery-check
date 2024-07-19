@@ -69,11 +69,31 @@
 
         });
 
-        document.querySelector('#checkYourNumberForm').addEventListener('submit', (e) => {
+        document.querySelector('#checkYourNumberForm').addEventListener('submit', async (e) => {
             e.preventDefault();
             const date = document.getElementById('yourDate').value;
             const yourNumbers = document.getElementById('yourNumbers').value;
-            // TODO: Realizar llamada al servidor. Procesar los datos y rellenar adecuadamente el DIV        
+            
+            // 1. Usar método fetch para hacer una petición de tipo get a /api/get-computed-results, con los valores de la query string a consumir
+            const response = await fetch(`/api/get-computed-results?date=${date}&playedNumbers=${yourNumbers}`);
+
+            // 3. Tenemos que procesar la respuesta de la API. La estructura es:
+            /**
+             * {
+             *    message: "Draw found",
+                  matchedNumbers: matchedNumbers.length,
+                  prize: prize
+             * }
+             */
+
+            const data = await response.json()
+
+            if(response.ok){
+                // 4. Tenemos que coger la propiedad winningNumbers de esta respuesta y meterla en el #numbersResult
+                document.querySelector('#yourNumbersResult').value = `Has acertado ${data.matchedNumbers} números. Su premio es de : ${data.prize} $`
+            } else {
+                document.querySelector('#yourNumbersResult').value = data.message
+            }      
         });
     </script>
 </body>
